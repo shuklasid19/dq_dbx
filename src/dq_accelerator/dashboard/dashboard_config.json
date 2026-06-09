@@ -1,0 +1,219 @@
+{
+  "name": "Data Quality Monitoring Dashboard",
+  "description": "Comprehensive data quality metrics and monitoring across bronze, silver, and gold layers",
+  "widgets": [
+    {
+      "id": "overall_quality_score",
+      "name": "Overall Quality Score",
+      "type": "counter",
+      "query": "overall_quality_score",
+      "visualization": {
+        "type": "counter",
+        "counterLabel": "Quality Score",
+        "targetValue": 98,
+        "colors": {
+          "good": "#22c55e",
+          "warning": "#eab308",
+          "critical": "#ef4444"
+        }
+      },
+      "row": 0,
+      "col": 0,
+      "sizeX": 3,
+      "sizeY": 2
+    },
+    {
+      "id": "tables_monitored",
+      "name": "Tables Monitored",
+      "type": "counter",
+      "query": "tables_monitored_counter",
+      "visualization": {
+        "type": "counter",
+        "counterLabel": "Tables"
+      },
+      "row": 0,
+      "col": 3,
+      "sizeX": 3,
+      "sizeY": 2
+    },
+    {
+      "id": "active_issues",
+      "name": "Active Issues",
+      "type": "counter",
+      "query": "active_issues_counter",
+      "visualization": {
+        "type": "counter",
+        "counterLabel": "Issues",
+        "targetValue": 0
+      },
+      "row": 0,
+      "col": 6,
+      "sizeX": 3,
+      "sizeY": 2
+    },
+    {
+      "id": "sla_compliance",
+      "name": "SLA Compliance",
+      "type": "counter",
+      "query": "sla_compliance_gauge",
+      "visualization": {
+        "type": "counter",
+        "counterLabel": "SLA %",
+        "targetValue": 95
+      },
+      "row": 0,
+      "col": 9,
+      "sizeX": 3,
+      "sizeY": 2
+    },
+    {
+      "id": "quality_trend",
+      "name": "Quality Score Trend (30 Days)",
+      "type": "chart",
+      "query": "quality_trend_chart",
+      "visualization": {
+        "type": "line",
+        "xAxis": "date",
+        "yAxis": ["quality_score"],
+        "showDataLabels": false,
+        "legend": {
+          "enabled": true
+        }
+      },
+      "row": 2,
+      "col": 0,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "layer_comparison",
+      "name": "Pass Rate by Layer",
+      "type": "chart",
+      "query": "layer_quality_comparison",
+      "visualization": {
+        "type": "bar",
+        "xAxis": "layer",
+        "yAxis": ["avg_quality_score"],
+        "showDataLabels": true
+      },
+      "row": 2,
+      "col": 6,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "top_failing_tables",
+      "name": "Top 10 Failing Tables",
+      "type": "table",
+      "query": "top_failing_tables",
+      "visualization": {
+        "type": "table",
+        "columns": [
+          {"name": "table_name", "title": "Table"},
+          {"name": "layer", "title": "Layer"},
+          {"name": "pass_rate", "title": "Pass Rate %"},
+          {"name": "error_rows", "title": "Errors"}
+        ]
+      },
+      "row": 6,
+      "col": 0,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "failure_heatmap",
+      "name": "Failure Rate Heatmap",
+      "type": "chart",
+      "query": "failure_heatmap",
+      "visualization": {
+        "type": "heatmap",
+        "xAxis": "date",
+        "yAxis": "table_name",
+        "value": "error_rate"
+      },
+      "row": 6,
+      "col": 6,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "quarantine_volume",
+      "name": "Quarantine Volume by Table",
+      "type": "chart",
+      "query": "quarantine_volume_chart",
+      "visualization": {
+        "type": "area",
+        "xAxis": "date",
+        "yAxis": ["quarantined_rows"],
+        "groupBy": "table_name",
+        "stacking": "normal"
+      },
+      "row": 10,
+      "col": 0,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "check_performance",
+      "name": "Check Performance Distribution",
+      "type": "chart",
+      "query": "check_performance_distribution",
+      "visualization": {
+        "type": "bar",
+        "xAxis": "check_name",
+        "yAxis": ["avg_duration_sec", "p95_duration_sec"]
+      },
+      "row": 10,
+      "col": 6,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "error_warning_breakdown",
+      "name": "Error vs Warning Breakdown",
+      "type": "chart",
+      "query": "error_warning_breakdown",
+      "visualization": {
+        "type": "line",
+        "xAxis": "date",
+        "yAxis": ["errors", "warnings"],
+        "showDataLabels": false
+      },
+      "row": 14,
+      "col": 0,
+      "sizeX": 6,
+      "sizeY": 4
+    },
+    {
+      "id": "table_health_cards",
+      "name": "Table Health Status",
+      "type": "table",
+      "query": "table_health_cards",
+      "visualization": {
+        "type": "table",
+        "columns": [
+          {"name": "table_name", "title": "Table"},
+          {"name": "layer", "title": "Layer"},
+          {"name": "health_status", "title": "Status"},
+          {"name": "pass_rate", "title": "Pass Rate %"},
+          {"name": "error_rows", "title": "Errors"},
+          {"name": "days_since_check", "title": "Days Since Check"}
+        ]
+      },
+      "row": 14,
+      "col": 6,
+      "sizeX": 6,
+      "sizeY": 4
+    }
+  ],
+  "schedule": {
+    "enabled": true,
+    "interval": "1 hour",
+    "timezone": "UTC"
+  },
+  "permissions": {
+    "can_view": ["data_engineers", "data_analysts", "executives"],
+    "can_edit": ["data_engineers"],
+    "can_run": ["data_engineers"]
+  }
+}
