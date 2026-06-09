@@ -1,0 +1,116 @@
+table_name: customers
+layer: bronze
+enabled: true
+
+# source:
+#   catalog: main
+#   schema: raw
+#   table: raw_customers
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: customers
+
+checks:
+  # Primary key
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_id
+    metadata:
+      description: "Customer ID is mandatory"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [customer_id]
+    metadata:
+      description: "Customer ID must be unique"
+
+  # Email validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: email
+    metadata:
+      description: "Email is required"
+
+  - criticality: error
+    check:
+      function: email_format_validator
+      arguments:
+        column: email
+    metadata:
+      description: "Email must be valid format"
+
+  # Name validation
+  - criticality: error
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: first_name
+    metadata:
+      description: "First name is required"
+
+  - criticality: error
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: last_name
+    metadata:
+      description: "Last name is required"
+
+  - criticality: warn
+    check:
+      function: string_length_range
+      arguments:
+        column: first_name
+        min_length: 2
+        max_length: 50
+    metadata:
+      description: "First name should be 2-50 characters"
+
+  # Phone validation
+  - criticality: warn
+    check:
+      function: phone_number_validator
+      arguments:
+        column: phone
+        country_code: "US"
+    metadata:
+      description: "Phone should be valid US format"
+
+  # Date of birth validation
+  - criticality: error
+    check:
+      function: date_range_validator
+      arguments:
+        column: date_of_birth
+        min_date: "1920-01-01"
+        max_date: "2010-12-31"
+    metadata:
+      description: "Date of birth must be reasonable"
+
+  # Address validation
+  - criticality: warn
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: address
+    metadata:
+      description: "Address should be provided"
+
+  # KYC status
+  - criticality: error
+    check:
+      function: is_in
+      arguments:
+        column: kyc_status
+        values: ["PENDING", "VERIFIED", "REJECTED", "EXPIRED"]
+    metadata:
+      description: "KYC status must be valid"

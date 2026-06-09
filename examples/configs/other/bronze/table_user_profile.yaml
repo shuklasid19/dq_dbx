@@ -1,0 +1,156 @@
+table_name: user_profile
+layer: bronze
+
+source:
+  catalog: dbx_dataquality
+  schema: raw
+  table: raw_user_profile
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: bronze
+    table: user_profile
+
+enabled: true
+
+custom_checks:
+  - name: custom_checks_library
+    module_path: /Workspace/Shared/dq/custom_checks_library.py
+
+checks:
+  # ID validations
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: user_id
+    metadata:
+      description: "User ID must not be null"
+
+  - criticality: error
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: user_id
+        expected_type: bigint
+        cast_if_possible: true
+    metadata:
+      description: "User ID must be castable to bigint for silver layer"
+
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: user_id
+        allow_zero: false
+    metadata:
+      description: "User ID must be positive"
+
+  # Email validation
+  - criticality: error
+    check:
+      function: email_format_validator
+      arguments:
+        column: email
+    metadata:
+      description: "Email must be valid format"
+
+  - criticality: warn
+    check:
+      function: string_length_range
+      arguments:
+        column: email
+        min_length: 5
+        max_length: 100
+    metadata:
+      description: "Email length should be reasonable"
+
+  # Phone validation
+  - criticality: warn
+    check:
+      function: phone_number_validator
+      arguments:
+        column: phone
+        country_code: US
+    metadata:
+      description: "Phone number should match US format"
+
+  # Name validations
+  - criticality: error
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: first_name
+    metadata:
+      description: "First name is required"
+
+  - criticality: warn
+    check:
+      function: string_length_range
+      arguments:
+        column: first_name
+        min_length: 1
+        max_length: 50
+    metadata:
+      description: "First name should be 1-50 characters"
+
+  - criticality: warn
+    check:
+      function: no_special_characters
+      arguments:
+        column: first_name
+        allowed_chars: "-' "
+    metadata:
+      description: "First name should only contain letters and basic punctuation"
+
+  # Date validations
+  - criticality: error
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: birth_date
+        expected_type: date
+        cast_if_possible: true
+    metadata:
+      description: "Birth date must be valid date"
+
+  - criticality: error
+    check:
+      function: is_past_date
+      arguments:
+        column: birth_date
+        allow_today: false
+    metadata:
+      description: "Birth date must be in the past"
+
+  - criticality: warn
+    check:
+      function: age_from_birthdate_validator
+      arguments:
+        birthdate_column: birth_date
+        min_age: 13
+        max_age: 120
+    metadata:
+      description: "Age must be between 13 and 120"
+
+  - criticality: error
+    check:
+      function: date_range_validator
+      arguments:
+        column: created_date
+        min_date: "2020-01-01"
+        max_date: "2026-12-31"
+    metadata:
+      description: "Created date must be within valid range"
+
+  # Account status validation
+  - criticality: error
+    check:
+      function: sql_expression
+      arguments:
+        expression: "account_status IN ('active', 'inactive', 'suspended', 'deleted')"
+        msg: "Invalid account status"
+        name: "valid_account_status"
+    metadata:
+      description: "Account status must be valid enum value"

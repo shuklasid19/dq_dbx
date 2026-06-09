@@ -1,0 +1,82 @@
+table_name: fact_transaction
+layer: silver
+enabled: true
+
+checks:
+  # Fact table checks
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: transaction_key
+    metadata:
+      description: "Transaction key is mandatory"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [transaction_key]
+    metadata:
+      description: "Transaction key must be unique"
+
+  # Foreign key references
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: account_key
+    metadata:
+      description: "Account key is required"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_key
+    metadata:
+      description: "Customer key is required"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: date_key
+    metadata:
+      description: "Date key is required"
+
+  # Measures validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: transaction_amount
+    metadata:
+      description: "Transaction amount is required"
+
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: transaction_amount
+        allow_zero: false
+    metadata:
+      description: "Transaction amount must be positive"
+
+  - criticality: error
+    check:
+      function: is_in
+      arguments:
+        column: transaction_type
+        values: ["DEPOSIT", "WITHDRAWAL", "TRANSFER", "PAYMENT", "FEE", "INTEREST"]
+    metadata:
+      description: "Transaction type must be valid"
+
+  # Business rules
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "transaction_amount <= 1000000 OR transaction_type IN ('TRANSFER', 'PAYMENT')"
+    metadata:
+      description: "Large amounts should be transfers or payments"

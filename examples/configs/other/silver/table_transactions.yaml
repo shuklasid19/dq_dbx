@@ -1,0 +1,136 @@
+table_name: transactions
+layer: silver
+
+source:
+  catalog: dbx_dataquality
+  schema: bronze
+  table: transactions
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: transactions
+
+enabled: true
+
+custom_checks:
+  - name: custom_checks_library
+    module_path: /Workspace/Shared/dq/custom_checks_library.py
+
+checks:
+  # Transaction ID validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: transaction_id
+    metadata:
+      description: "Transaction ID is required"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [transaction_id]
+    metadata:
+      description: "Transaction ID must be unique"
+
+  # Amount validations
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: amount
+    metadata:
+      description: "Amount is required"
+
+  - criticality: error
+    check:
+      function: numeric_precision_validator
+      arguments:
+        column: amount
+        max_precision: 18
+        max_scale: 2
+    metadata:
+      description: "Amount must have valid precision and scale"
+
+  - criticality: warn
+    check:
+      function: is_in_range
+      arguments:
+        column: amount
+        min_value: 0.01
+        max_value: 1000000
+    metadata:
+      description: "Amount should be within expected range"
+
+  # Currency validation
+  - criticality: error
+    check:
+      function: currency_code_validator
+      arguments:
+        column: currency_code
+    metadata:
+      description: "Currency code must be valid ISO 4217 code"
+
+  # Timestamp validations
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: transaction_timestamp
+    metadata:
+      description: "Transaction timestamp is required"
+
+  - criticality: error
+    check:
+      function: timestamp_range_validator
+      arguments:
+        column: transaction_timestamp
+        min_timestamp: "2020-01-01 00:00:00"
+        max_timestamp: "2026-12-31 23:59:59"
+    metadata:
+      description: "Transaction timestamp must be within valid range"
+
+  # Business logic validations
+  - criticality: error
+    check:
+      function: compare_columns
+      arguments:
+        column1: settlement_date
+        column2: transaction_timestamp
+        operator: ">="
+    metadata:
+      description: "Settlement date must be after or equal to transaction timestamp"
+
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "transaction_type IN ('debit', 'credit', 'refund', 'adjustment')"
+        msg: "Invalid transaction type"
+        name: "valid_transaction_type"
+    metadata:
+      description: "Transaction type must be valid"
+
+  # Account reference validation
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: account_id
+        allow_zero: false
+    metadata:
+      description: "Account ID must be positive"
+
+  # Status validation
+  - criticality: error
+    check:
+      function: sql_expression
+      arguments:
+        expression: "status IN ('pending', 'completed', 'failed', 'cancelled')"
+        msg: "Invalid transaction status"
+        name: "valid_transaction_status"
+    metadata:
+      description: "Transaction status must be valid"

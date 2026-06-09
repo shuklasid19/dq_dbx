@@ -1,0 +1,72 @@
+table_name: dim_customer
+layer: silver
+enabled: true
+
+checks:
+  # Dimension table checks
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_key
+    metadata:
+      description: "Surrogate key is mandatory"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [customer_key]
+    metadata:
+      description: "Surrogate key must be unique"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_id
+    metadata:
+      description: "Business key is mandatory"
+
+  # SCD Type 2 validations
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: effective_date
+    metadata:
+      description: "Effective date is required for SCD"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: is_current
+    metadata:
+      description: "Current flag is required"
+
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "end_date IS NULL OR end_date > effective_date"
+    metadata:
+      description: "End date must be after effective date"
+
+  # Data quality
+  - criticality: error
+    check:
+      function: email_format_validator
+      arguments:
+        column: email
+    metadata:
+      description: "Email must be valid"
+
+  - criticality: error
+    check:
+      function: is_in
+      arguments:
+        column: customer_segment
+        values: ["RETAIL", "BUSINESS", "PREMIUM", "INSTITUTIONAL"]
+    metadata:
+      description: "Customer segment must be valid"

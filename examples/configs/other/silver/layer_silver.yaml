@@ -1,0 +1,20 @@
+layer_name: silver
+execution_mode: fail_fast
+log_level: INFO
+
+output:
+  quarantine_data:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: silver_quarantine
+    use_table_name_suffix: true  # Creates silver_quarantine_customers, silver_quarantine_orders, etc.
+  
+  metrics:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: dq_metrics
+  
+  summary:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: dq_summary

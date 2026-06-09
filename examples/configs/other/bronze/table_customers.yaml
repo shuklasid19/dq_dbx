@@ -1,0 +1,88 @@
+table_name: customers
+layer: bronze
+
+source:
+  catalog: dbx_dataquality
+  schema: raw
+  table: raw_customers
+
+output:
+  # Table-specific overrides (optional)
+  valid_data:
+    catalog: dbx_dataquality
+    schema: bronze
+    table: customers
+  
+  # Can override quarantine location for specific table
+  # quarantine_data:
+  #   catalog: dbx_dataquality
+  #   schema: dq_observe
+  #   table: bronze_quarantine_customers  # Explicit table name
+
+enabled: true
+
+checks:
+  # Null checks
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_id
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: email
+
+  # Uniqueness check
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [customer_id]
+
+  # Custom email validation
+  - criticality: warn
+    check:
+      function: email_format_validator
+      arguments:
+        column: email
+
+  # Data type validation for bronze to silver
+  - criticality: error
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: customer_id
+        expected_type: int
+        cast_if_possible: true
+    metadata:
+      description: "Validate customer_id can be cast to integer for silver layer"
+
+  - criticality: warn
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: created_date
+        expected_type: date
+        cast_if_possible: true
+    metadata:
+      description: "Validate created_date can be cast to date type"
+
+  # String length validation
+  - criticality: warn
+    check:
+      function: string_length_range
+      arguments:
+        column: first_name
+        min_length: 1
+        max_length: 50
+
+  # Phone validation
+  - criticality: warn
+    check:
+      function: phone_number_validator
+      arguments:
+        column: phone
+        country_code: US

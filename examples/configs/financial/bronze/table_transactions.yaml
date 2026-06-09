@@ -1,0 +1,106 @@
+table_name: transactions
+layer: bronze
+enabled: true
+
+# source:
+#   catalog: main
+#   schema: raw
+#   table: raw_transactions
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: transactions
+
+checks:
+  # Primary key checks
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: transaction_id
+    metadata:
+      description: "Transaction ID is mandatory"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [transaction_id]
+    metadata:
+      description: "Transaction ID must be unique"
+
+  # Date validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: transaction_date
+    metadata:
+      description: "Transaction date is required"
+
+  - criticality: error
+    check:
+      function: date_range_validator
+      arguments:
+        column: transaction_date
+        min_date: "2020-01-01"
+        max_date: "2030-12-31"
+    metadata:
+      description: "Transaction date must be within valid range"
+
+  # Amount validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: amount
+    metadata:
+      description: "Amount is required"
+
+  - criticality: error
+    check:
+      function: is_numeric
+      arguments:
+        column: amount
+    metadata:
+      description: "Amount must be numeric"
+
+  - criticality: warn
+    check:
+      function: numeric_precision_validator
+      arguments:
+        column: amount
+        max_precision: 18
+        max_scale: 2
+    metadata:
+      description: "Amount should have max 2 decimal places"
+
+  # Currency validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: currency_code
+    metadata:
+      description: "Currency code is required"
+
+  - criticality: error
+    check:
+      function: string_length_range
+      arguments:
+        column: currency_code
+        min_length: 3
+        max_length: 3
+    metadata:
+      description: "Currency code must be 3 characters"
+
+  # Account validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: account_id
+    metadata:
+      description: "Account ID is required"

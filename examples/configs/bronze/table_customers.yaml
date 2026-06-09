@@ -1,0 +1,140 @@
+table_name: customers
+layer: bronze
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: customers_v2
+  
+  # quarantine_data:
+  #   catalog: dbx_dataquality
+  #   schema: dq_observe
+  #   table: bronze_quarantine_customers
+
+# Path to your custom checks Python file
+custom_checks_module: /Workspace/Users/rajesh.k.rout@v4c.ai/dbx_dataquality/consumer_app/custom_checks_library.py
+
+enabled: true
+
+checks:
+  # =========================================================================
+  # ERROR CHECKS (will quarantine bad rows)
+  # =========================================================================
+
+  # CHECK 1: customer_id must not be null
+  # Expected: 1 fail (the "demo date" row has null customer_id)
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_id
+
+  # CHECK 2: created_date must be a valid date
+  # Expected: 1 fail (the "demo date" string cannot be cast to date)
+  - criticality: error
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: created_date
+        expected_type: date
+        cast_if_possible: true
+    metadata:
+      description: "Validate created_date can be cast to date type"
+
+  # CHECK 3: age must be positive (> 0)
+  # Expected: 12 fails (11 negative ages + 1 age=0)
+  # customer_ids: 103,200,338,418,419,424,451,482,502,719,922,962
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: age
+
+  # =========================================================================
+  # WARNING CHECKS (flag but don't quarantine)
+  # =========================================================================
+
+  # CHECK 4: email should not be null or empty
+  # Expected: 441 warnings (441 rows have null email)
+  - criticality: warn
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: email
+
+  # CHECK 5: first_name should not be null or empty
+  # Expected: 146 warnings (146 rows have null first_name)
+  - criticality: warn
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: first_name
+
+  # CHECK 6: first_name length should be 1-50 chars
+  # Expected: 1 warning (the "Rajeshhhh..." row with 254 char name)
+  # Nulls pass this check (null is OK, only non-null with wrong length fails)
+  - criticality: warn
+    check:
+      function: string_length_range
+      arguments:
+        column: first_name
+        min_length: 1
+        max_length: 50
+
+  # CHECK 7: last_name length should be 1-50 chars
+  # Expected: 1 warning (the "Rajeshhhh..." row with 254 char last_name)
+  - criticality: warn
+    check:
+      function: string_length_range
+      arguments:
+        column: last_name
+        min_length: 1
+        max_length: 50
+
+  # CHECK 8: city must be in valid list
+  # Expected: 0 warnings (all 1000 rows have valid cities)
+  - criticality: warn
+    check:
+      function: is_in_list
+      arguments:
+        column: city
+        allowed: ["New York", "Houston", "Chicago", "Phoenix", "Los Angeles"]
+
+  # CHECK 9: age should be in range 1-120
+  # Expected: 12 warnings (same 12 rows with age <= 0)
+  - criticality: warn
+    check:
+      function: is_in_range
+      arguments:
+        column: age
+        min_limit: 1
+        max_limit: 120
+
+  # CHECK 10: email format should be valid (among non-null)
+  # Expected: 0 warnings (all 559 non-null emails have valid format, nulls pass)
+  - criticality: warn
+    check:
+      function: email_format_validator
+      arguments:
+        column: email
+
+  # CHECK 11: customer_id should be castable to integer
+  # Expected: 1 warning (the null customer_id row has "null" string)
+  - criticality: warn
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: customer_id
+        expected_type: int
+        cast_if_possible: true
+    metadata:
+      description: "Validate customer_id can be cast to integer for silver layer"
+
+  # CHECK 12: date_of_birth should be a past date
+  # Expected: 0 warnings (all DOBs are in the past, range: 1926-2008)
+  - criticality: warn
+    check:
+      function: is_past_date
+      arguments:
+        column: date_of_birth

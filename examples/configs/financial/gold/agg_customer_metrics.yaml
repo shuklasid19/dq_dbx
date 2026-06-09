@@ -1,0 +1,74 @@
+table_name: agg_customer_metrics
+layer: gold
+enabled: true
+
+checks:
+  # Key validations
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_key
+    metadata:
+      description: "Customer key is mandatory"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: metric_date
+    metadata:
+      description: "Metric date is required"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [customer_key, metric_date]
+    metadata:
+      description: "Customer and date combination must be unique"
+
+  # Metric validations
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: total_balance
+        allow_zero: true
+    metadata:
+      description: "Total balance must be non-negative in aggregates"
+
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: active_accounts
+        allow_zero: true
+    metadata:
+      description: "Active accounts count must be non-negative"
+
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: monthly_transaction_count
+        allow_zero: true
+    metadata:
+      description: "Monthly transaction count must be non-negative"
+
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "active_accounts > 0 OR total_balance = 0"
+    metadata:
+      description: "If no active accounts, balance should be zero"
+
+  # Rate validations
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "avg_transaction_amount >= 0 AND avg_transaction_amount <= total_transaction_volume"
+    metadata:
+      description: "Average transaction amount should be reasonable"

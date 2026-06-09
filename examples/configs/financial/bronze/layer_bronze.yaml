@@ -1,0 +1,34 @@
+layer_name: bronze
+execution_mode: continue
+log_level: INFO
+
+output:
+  # Quarantine tables with dynamic table name suffix
+  quarantine_data:
+    catalog: dbx_dataquality
+    schema: bronze_quarantine
+    table: tbl
+    use_table_name_suffix: true  # Creates bronze_quarantine_customers, bronze_quarantine_orders, etc.
+    # external_location: abfss://quarantine@datalake.dfs.core.windows.net/bronze/{table_name}/
+    # Or using Unity Catalog external location name with placeholder:
+    # external_location: my_quarantine_location/{layer}/{table_name}/
+  
+  # Single metrics table for all tables (same schema)
+  metrics:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: dq_metrics
+  
+  # Single summary table for all tables (same schema)
+  summary:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: dq_summary
+
+custom_checks:
+  - name: email_format_validator
+  - name: phone_number_validator
+  - name: date_range_validator
+  - name: string_length_range
+  - name: is_positive
+  - name: column_datatype_validator

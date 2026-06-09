@@ -1,0 +1,39 @@
+layer_name: bronze
+log_level: INFO
+
+output:
+  # Quarantine tables with dynamic table name suffix
+  quarantine_data:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: bronze_quarantine
+    use_table_name_suffix: true  # Creates bronze_quarantine_customers, bronze_quarantine_orders, etc.
+    # external_location: abfss://quarantine@datalake.dfs.core.windows.net/bronze/{table_name}/
+    # Or using Unity Catalog external location name with placeholder:
+    # external_location: my_quarantine_location/{layer}/{table_name}/
+  
+  # Single metrics table for all tables (same schema)
+  metrics:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: dq_metrics
+  
+  # Single summary table for all tables (same schema)
+  summary:
+    catalog: dbx_dataquality
+    schema: dq_observe
+    table: dq_summary
+
+# ==========================================================================
+# CUSTOM CHECKS ARE NOW AUTO-LOADED!
+# ==========================================================================
+# Custom checks are loaded from the 'custom_checks_module' specified in
+# each table's YAML config. No need to list them here anymore.
+#
+# How it works:
+# 1. DQX built-in checks → Auto-discovered from DQX library
+# 2. Custom checks → Loaded from your custom_checks_module Python file
+#
+# Example in table_customers.yaml:
+#   custom_checks_module: /Workspace/Users/you@company.com/custom_checks_library.py
+# ==========================================================================

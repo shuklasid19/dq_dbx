@@ -1,0 +1,80 @@
+table_name: agg_daily_account_balance
+layer: gold
+enabled: true
+
+checks:
+  # Aggregate table checks
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: date_key
+    metadata:
+      description: "Date key is mandatory"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: account_key
+    metadata:
+      description: "Account key is mandatory"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [date_key, account_key]
+    metadata:
+      description: "Date and account combination must be unique"
+
+  # Aggregate measures
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: opening_balance
+    metadata:
+      description: "Opening balance is required"
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: closing_balance
+    metadata:
+      description: "Closing balance is required"
+
+  - criticality: error
+    check:
+      function: is_numeric
+      arguments:
+        column: total_debits
+    metadata:
+      description: "Total debits must be numeric"
+
+  - criticality: error
+    check:
+      function: is_numeric
+      arguments:
+        column: total_credits
+    metadata:
+      description: "Total credits must be numeric"
+
+  # Business logic validation
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "ABS(closing_balance - (opening_balance + total_credits - total_debits)) < 0.01"
+    metadata:
+      description: "Balance reconciliation check"
+
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: transaction_count
+        allow_zero: true
+    metadata:
+      description: "Transaction count must be non-negative"

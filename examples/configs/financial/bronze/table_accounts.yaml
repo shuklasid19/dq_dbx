@@ -1,0 +1,106 @@
+table_name: accounts
+layer: bronze
+enabled: true
+
+# source:
+#   catalog: main
+#   schema: raw
+#   table: raw_accounts
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: accounts
+
+checks:
+  # Primary key
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: account_id
+    metadata:
+      description: "Account ID is mandatory"
+
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [account_id]
+    metadata:
+      description: "Account ID must be unique"
+
+  # Customer reference
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_id
+    metadata:
+      description: "Customer ID is required"
+
+  # Account number validation
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: account_number
+    metadata:
+      description: "Account number is required"
+
+  - criticality: error
+    check:
+      function: string_length_range
+      arguments:
+        column: account_number
+        min_length: 10
+        max_length: 20
+    metadata:
+      description: "Account number must be 10-20 characters"
+
+  # Account type validation
+  - criticality: error
+    check:
+      function: is_in
+      arguments:
+        column: account_type
+        values: ["SAVINGS", "CHECKING", "CREDIT", "INVESTMENT", "LOAN"]
+    metadata:
+      description: "Account type must be valid"
+
+  # Balance validation
+  - criticality: error
+    check:
+      function: is_numeric
+      arguments:
+        column: balance
+    metadata:
+      description: "Balance must be numeric"
+
+  # Status validation
+  - criticality: error
+    check:
+      function: is_in
+      arguments:
+        column: status
+        values: ["ACTIVE", "INACTIVE", "CLOSED", "SUSPENDED"]
+    metadata:
+      description: "Status must be valid"
+
+  # Date validations
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: opened_date
+    metadata:
+      description: "Opened date is required"
+
+  - criticality: warn
+    check:
+      function: sql_expression
+      arguments:
+        expression: "closed_date IS NULL OR closed_date >= opened_date"
+    metadata:
+      description: "Closed date must be after opened date"

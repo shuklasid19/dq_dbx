@@ -1,0 +1,80 @@
+table_name: orders
+layer: silver
+
+source:
+  catalog: dbx_dataquality
+  schema: bronze
+  table: customers
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: orders
+
+enabled: true
+
+checks:
+  # Not null checks
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: order_id
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: customer_id
+
+  - criticality: error
+    check:
+      function: is_not_null
+      arguments:
+        column: order_date
+
+  # Uniqueness
+  - criticality: error
+    check:
+      function: is_unique
+      arguments:
+        columns: [order_id]
+
+  # Range validation
+  - criticality: error
+    check:
+      function: is_in_range
+      arguments:
+        column: order_amount
+        min_value: 0
+        max_value: 1000000
+
+  # Date range validation
+  - criticality: warn
+    check:
+      function: date_range_validator
+      arguments:
+        column: order_date
+        min_date: "2020-01-01"
+        max_date: "2026-12-31"
+
+  # Referential integrity (using SQL expression)
+  - criticality: error
+    check:
+      function: sql_expression
+      arguments:
+        expression: "status IN ('pending', 'completed', 'cancelled')"
+        msg: "Invalid order status"
+        name: "valid_order_status"
+
+  # Data type validation
+  - criticality: error
+    check:
+      function: column_datatype_validator
+      arguments:
+        column: order_amount
+        expected_type: decimal(10,2)
+        cast_if_possible: false
+    metadata:
+      description: "Strict decimal validation for order amount"

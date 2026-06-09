@@ -1,0 +1,135 @@
+table_name: product_catalog
+layer: silver
+
+source:
+  catalog: dbx_dataquality
+  schema: bronze
+  table: product_catalog
+
+output:
+  valid_data:
+    catalog: dbx_dataquality
+    schema: silver
+    table: product_catalog
+
+enabled: true
+
+custom_checks:
+  - name: custom_checks_library
+    module_path: /Workspace/Shared/dq/custom_checks_library.py
+
+checks:
+  # SKU validation
+  - criticality: error
+    check:
+      function: is_not_null_and_not_empty
+      arguments:
+        column: sku
+    metadata:
+      description: "SKU is required"
+
+  - criticality: error
+    check:
+      function: string_pattern_validator
+      arguments:
+        column: sku
+        pattern: "^[A-Z]{3}-\\d{6}$"
+    metadata:
+      description: "SKU must match format XXX-NNNNNN"
+
+  - criticality: error
+    check:
+      function: is_uppercase
+      arguments:
+        column: sku
+    metadata:
+      description: "SKU must be uppercase"
+
+  # Product name validation
+  - criticality: error
+    check:
+      function: string_length_range
+      arguments:
+        column: product_name
+        min_length: 3
+        max_length: 200
+    metadata:
+      description: "Product name must be 3-200 characters"
+
+  # Price validations
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: price
+        allow_zero: false
+    metadata:
+      description: "Price must be positive"
+
+  - criticality: warn
+    check:
+      function: is_in_range
+      arguments:
+        column: price
+        min_value: 0.01
+        max_value: 50000
+    metadata:
+      description: "Price should be within expected range"
+
+  # Discount validation
+  - criticality: warn
+    check:
+      function: is_percentage
+      arguments:
+        column: discount_percent
+    metadata:
+      description: "Discount must be 0-100"
+
+  - criticality: error
+    check:
+      function: compare_columns
+      arguments:
+        column1: price
+        column2: discounted_price
+        operator: ">="
+    metadata:
+      description: "Original price must be >= discounted price"
+
+  # URL validation
+  - criticality: warn
+    check:
+      function: url_validator
+      arguments:
+        column: product_url
+        require_https: true
+    metadata:
+      description: "Product URL should be valid HTTPS URL"
+
+  # Boolean validation
+  - criticality: error
+    check:
+      function: is_boolean_string
+      arguments:
+        column: is_active
+        true_values: ['true', 't', 'yes', '1']
+        false_values: ['false', 'f', 'no', '0']
+    metadata:
+      description: "is_active must be valid boolean string"
+
+  # Stock validation
+  - criticality: error
+    check:
+      function: is_positive
+      arguments:
+        column: stock_quantity
+        allow_zero: true
+    metadata:
+      description: "Stock quantity must be non-negative"
+
+  - criticality: error
+    check:
+      function: is_even
+      arguments:
+        column: package_quantity
+    metadata:
+      description: "Package quantity must be even number"
